@@ -40,8 +40,8 @@ autoplot(xts_agencia[,c("ArribosTotales")])
 
 xts_agencia$ArribosTotales <- na.approx(xts_agencia$ArribosTotales)
 
-
 acf(xts_agencia$ArribosTotales)
+
 fit_arima <- auto.arima(xts_agencia$ArribosTotales)
 summary(fit_arima)
 checkresiduals(fit_arima)
@@ -51,6 +51,12 @@ fit_ets <- ets(xts_agencia$ArribosTotales)
 summary(fit_ets)
 checkresiduals(fit_ets)
 autoplot(forecast(fit_ets,h=9),ylab="")
+
+
+forecast(fit_arima,h=9)
+arima.sim(model = list(order=c(0,1,1),ma=0.3816),3)
+
+fit_arima
 
 
 cor.mtest <- function(mat, ...) {
@@ -76,6 +82,8 @@ corrplot(corr_ts,type="upper", tl.srt=45,tl.col="black",
          diag=FALSE,addCoef.col = "black",
          p.mat = p.mat, sig.level = 0.01, insig = "blank",
          method="color", col=col(200))
+
+
 
 TiempoEspera <- xts_agencia$TiempoEspera
 
