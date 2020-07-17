@@ -52,8 +52,6 @@ summary(fit_ets)
 checkresiduals(fit_ets)
 autoplot(forecast(fit_ets,h=9),ylab="")
 
-#Cubi
-
 forecast(fit_arima,h=9)
 arima.sim(model = list(order=c(0,1,1),ma=0.3816),3)
 
