@@ -40,6 +40,8 @@ data.dropna(axis=0,inplace=True,subset=to_drop)
 #elimino EDAD_2
 data.drop("EDAD_2",axis=1,inplace=True)
 
+data.to_csv("Data/limabank_to_interpret.csv", index=False)
+
 #CANTIDAD_PRODUCTOS  normalizar
 data["CANTIDAD_PRODUCTOS"] = (data["CANTIDAD_PRODUCTOS"] -data["CANTIDAD_PRODUCTOS"].mean())/(np.std(data["CANTIDAD_PRODUCTOS"]) *2)
 
