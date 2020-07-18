@@ -5,6 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OrdinalEncoder
 
 data = pd.read_csv("Data/LimaBank_Data_Grupo1.csv")
 backup= data.copy(deep=True)
@@ -60,3 +61,8 @@ data["DESTIPPROVINCIA"] = np.select([data["DESTIPPROVINCIA"]=="Lima",
                                      data["DESTIPPROVINCIA"]=="Provincia"],
                                     [1,
                                      0])
+
+# TIPNIVELEDUCACIONAL
+order = ["ANA","NDI","PRI","TEI","SEC","TEC","FAR","SUP","BAC","LIC","TIT","MAE","DOC"]
+data["TIPNIVELEDUCACIONAL"] = pd.Categorical(data["TIPNIVELEDUCACIONAL"],categories=order,ordered=True)
+OrdinalEncoder(data["TIPNIVELEDUCACIONAL"])

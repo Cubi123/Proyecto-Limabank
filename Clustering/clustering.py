@@ -1,26 +1,58 @@
+# %% markdown
+# # Clustering
+# En primer lugar, se cargan los datos provenientes de la limpieza de vacíos y el encoding de variables cardinales. Estos datos aún tienen diferente escala, lo cual es un problema para los modelos de clustering basados en distancia euclidiana.
+
+# %% codecell
+import pandas as pd
 import numpy as np
-import seaborn
-import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_samples, silhouette_score
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from
 
-rnorm = np.random.randn
+data = pd.read_csv("Data/data_clean.csv")
 
-x = rnorm(1000) * 10
-y = np.concatenate([rnorm(500), rnorm(500) + 5])
+# %% markdown
+# Para solucionar los problemas mencionados, en primer lugar, truncaremos las variables de ingreso y Deudas reemplazando sus fuertes colas a la derecha con el valor en el cuantil 95. Luego, escalaremos con MinMaxScaler.
 
-fig, axes = plt.subplots(3, 1)
+# %% codecell
+to_truncate = ["INGRESO","SBS_DEUTOTAL","Banco1_DEUTOTAL",
+               "Banco2_DEUTOTAL","Banco3_DEUTOTAL",
+               "Banco4_DEUTOTAL", "OTROS_DEUTOTAL"]
 
-axes[0].scatter(x, y)
-axes[0].set_title('Data (note different axes scales)')
+for col in to_truncate:
+    limit = np.percentile(data[col],95)
+    mask = data[col]>limit
+    data.loc[mask,col] = limit
 
-km = KMeans(2)
+for col in data.columns:
+    sca = MinMaxScaler()
+    data[col] = sca.fit_transform(data[[col]])
 
-clusters = km.fit_predict(np.array([x, y]).T)
+# %% markdown
+# # CLustering por K-KMeans
+# En este punto realizaremos el clustering por el algoritmo de k-means. Se usará el método del codo para determinar el número de clusters k óptimo
 
-axes[1].scatter(x, y, c=clusters, cmap='bwr')
-axes[1].set_title('non-normalised K-means')
+# %% codecell
+df1 = data.copy(deep=True)
 
-clusters = km.fit_predict(np.array([x / 10, y]).T)
+range_n_clusters = [i for i in range(2,20)]
+silhouette_list=[]
 
-axes[2].scatter(x, y, c=clusters, cmap='bwr')
-axes[2].set_title('Normalised K-means')
+for n_clusters in range_n_clusters:
+
+    clusterer = KMeans(n_clusters=n_clusters, random_state=42)
+    cluster_labels = clusterer.fit_predict(df1)
+
+    # The silhouette_score gives the average value for all the samples.
+    # This gives a perspective into the density and separation of the formed
+    # clusters
+    silhouette_avg = silhouette_score(df1, cluster_labels)
+    print("For n_clusters =", n_clusters,
+          "The average silhouette_score is :", silhouette_avg)
+
+    # Compute the silhouette scores for each sample
+    sample_silhouette_values = silhouette_samples(df1, cluster_labels)
+    silhouette_list.append(silhouette_avg)
+plt.plot(range_n_clusters,silhouette_list)
