@@ -7,6 +7,11 @@ import seaborn as sns
 import missingno as msno
 import os
 
+def dummies_inplace(df, colname):
+    dummies = pd.get_dummies(df[colname],prefix=colname, prefix_sep="_")
+    dummies.replace(to_replace=1,value=(1/len(df[colname]))**0.5, inplace=True)
+    df.drop(colname, axis = 1, inplace = True)
+    df = pd.concat([df,dummies], axis=1)
 
 def continous_grid(df, X  ,n_rows, n_cols, bins=10, size = 10, size_ratio = 1,alpha=1,hue_col_name=None):
 

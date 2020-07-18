@@ -1,7 +1,10 @@
-# %% codecell
+from Clustering.setup import *
 import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
 data = pd.read_csv("Data/LimaBank_Data_Grupo1.csv")
 backup= data.copy(deep=True)
@@ -37,4 +40,23 @@ data.dropna(axis=0,inplace=True,subset=to_drop)
 data.drop("EDAD_2",axis=1,inplace=True)
 
 #CANTIDAD_PRODUCTOS  normalizar
-# data["CANTIDAD_PRODUCTOS"] = (data["CANTIDAD_PRODUCTOS"] -data["CANTIDAD_PRODUCTOS"].mean())/
+data["CANTIDAD_PRODUCTOS"] = (data["CANTIDAD_PRODUCTOS"] -data["CANTIDAD_PRODUCTOS"].mean())/(np.std(data["CANTIDAD_PRODUCTOS"]) *2)
+
+# TIPESTCIVIL
+mask = np.logical_and((data["TIPESTCIVIL"] != "SOL") , (data["TIPESTCIVIL"] != "CAS"))
+data.loc[mask,"TIPESTCIVIL"] = "otros"
+dummies_inplace(data,"TIPESTCIVIL")
+
+# DIGITALIDAD
+dummies_inplace(data,"DIGITALIDAD")
+
+# CODPAISNACIONALIDAD
+mask = np.logical_and((data["CODPAISNACIONALIDAD"] != "PER") , (data["CODPAISNACIONALIDAD"] != "VEN"))
+data.loc[mask,"CODPAISNACIONALIDAD"] = "otros"
+dummies_inplace(data,"CODPAISNACIONALIDAD")
+
+# DESTIPPROVINCIA
+data["DESTIPPROVINCIA"] = np.select([data["DESTIPPROVINCIA"]=="Lima",
+                                     data["DESTIPPROVINCIA"]=="Provincia"],
+                                    [1,
+                                     0])
