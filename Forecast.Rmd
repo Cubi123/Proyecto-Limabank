@@ -15,6 +15,9 @@ library(caret)
 library(skimr)
 library(tidymodels)
 library(pander)
+library(earth)
+library(caTools)
+library(pROC)
 
 
 setwd("C:/Users/Christian/Desktop/Ciclo Cubi/Temas IOP/Proyecto-Limabank/Data")
@@ -145,6 +148,8 @@ En el grafico a continuacion se observa el pronostico con intervalos de confianz
 autoplot(forecast(fit_ets,h=3),ylab="")
 ```
 
+Los valores pronosticados por el ajuste de los modelos ARIMA y ETS son similares, por lo cual es indistinto escoger entre cualquiera de estos modelos. Para el caso de estudio, elegimos el modelo de ARIMA.
+
 ### Modelamiento
 Se tiene como objetivo determinar que variables tienen una mayor influencia en el tiempo de espera actual. Para conocer la relacion entre datos se hace uso del grafico de correlaciones (correlograma).
 
@@ -183,15 +188,96 @@ fit_lm_tiempo_espera <- stats::lm(TiempoEspera~.,data)
 anova(fit_lm_tiempo_espera)
 ```
 
-Observamos que las variables con mayor significacion en el modelo son StaffTurnoTarde, TotalArribos, half (1:primera mitad del año, 2:segunda mitad del año) y TiempoAtencion. 
-
+De acuerdo al analisis de varianza realizada, las variables con mayor significacion en el modelo son StaffTurnoTarde, TotalArribos, half (1:primera mitad del año, 2:segunda mitad del año) y TiempoAtencion. 
 
 ```{r, echo=FALSE}
-agencia <- as.data.frame(coredata(xts_agencia))
+autoplot(data[,c("TiempoEspera","StaffTurnoTarde","ArribosTotales","half")])
+```
+
+**ARIMA**  
+
+Ajustamos el modelo de regresion dinamica, modelando los errores con un modelo de arima. 
+
+```{r, echo=FALSE}
 data <- tk_augment_timeseries_signature(xts_agencia)
-fit_lm_tiempo_espera <- stats::lm(TiempoEspera~.,data)
-anova(fit_lm_tiempo_espera)
+
+TiempoEspera <- xts_agencia$TiempoEspera
+
+data_arima <- cbind(xts_agencia,data$half)
+fit_tiempo_espera <- auto.arima(data_arima$TiempoEspera,
+                                xreg=data_arima[,c(1,3,10)])
+
+summary(fit_tiempo_espera)
 ```
 
 
+```{r, echo=FALSE}
+checkresiduals(fit_tiempo_espera)
+```
 
+Dado que el modelo resultante es un ARIMA(0,0,0), se opta por usar un modelo lineal.  
+
+
+**MARS**  
+Debido a que el modelo de ARIMA solo explica un error normal (White noise) se opta por usar un modelo Multivariado adaptativo de regresion por splines, con el objetivo de conocer el impacto de las variables en el modelo.
+
+Se divide el modelo en 80% y 20% y se entrena el modelo utilizando cross validation, 10 folds
+
+```{r, echo=FALSE,warning=FALSE}
+m1 <- earth(TiempoEspera~ArribosTotales+StaffTurnoTarde+half,data=data,
+      nfold=10, ncross=30,varmod.method="lm",keepxy=TRUE)
+summary(m1)
+```
+
+No se detecta presencia de herestocedasticidad en nuestro modelo. Algunos outlier en cuanto a los errores residuales. El modelo es valido
+
+```{r, echo=FALSE}
+plot(m1,main="")
+```
+
+Observamos que el numero de bases optimas para la estimacion de nuestro modelo es 6, en funcion del GRSq
+
+```{r, echo=FALSE}
+plot(m1, which=1, col.rsq=0)
+```
+
+Observamos que las variables mas importantes para la estimacion de nuestro modelos en orden de mayor a menor importante son los arribos totales, la cantidad de personas en el staff turno tarde y si nos encontramos en la primera o segunda mitad del año.
+
+```{r, echo=FALSE}
+evimp(m1, trim=FALSE)
+```
+
+En el siguiente grafico, observamos el impacto que tiene la variacion de las variables en nuestra variable respuesta Tiempo Espera. En la primera mitad del año, el tiempo de espera es menor que en la segunda mitad del año. Asimismo, un aumento en la cantidad de personas en el staff del turno tarde, se ve reflejado en un aumento en el tiempo espera. Por ultimo, se observa un impacto mas pronunciado en la variable respuesta, en el rango de 4837 y 5077. Apartir de 5130 se equilibra el impacto de esta variable.
+
+```{r, echo=FALSE}
+plotmo(m1)
+```
+
+Por ultimo, para pronosticar los tiempos de espera para Abril, Mayo, Junio , se corrieron 1000 simulaciones, utilizando los valores generados por nuestro ajuste por ARIMA, numero de personas staff tarde igual a 6 (mismo que los meses anteriores) y half igual a 1, ya que nos encontramos en la primera mitad de año
+
+```{r, echo=FALSE}
+set.seed(111)
+
+nsimulations <- 1000
+abril <- rep(0,nsimulations)
+mayo <- rep(0,nsimulations)
+junio <- rep(0,nsimulations)
+for (i in 1:nsimulations){
+  test_data <- data.frame(ArribosTotales =c(simulate(fit_arima,future = TRUE,nsim = 3)),
+                          StaffTurnoTarde=6,
+                          half=1)
+  
+  tiemposEspera_predicted <- predict(m1,test_data)
+  abril[i] <- tiemposEspera_predicted[1]
+  mayo[i] <- tiemposEspera_predicted[2]
+  junio[i] <-tiemposEspera_predicted[3]
+}
+
+par(mfrow=c(1,3))
+
+hist(abril)
+hist(mayo)
+hist(junio)
+```
+
+A traves de los histogramas generados para cada mes, observamos que se cumple con el objetivo de la gerencia de mantener en 10min el tiempo limite de espera. La probabilidad de superar ese tiempo de espera para Abril, Mayo y Junio es de 0.049,0.071,0.063

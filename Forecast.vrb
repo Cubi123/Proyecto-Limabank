@@ -1,0 +1,422 @@
+\frametitle{Proyecto-Limabank}
+\protect\hypertarget{proyecto-limabank}{}
+
+Proyecto del curso Temas de Investigación de Operaciones 2020-1
+
+\begin{block}{Caso: Agencias}
+
+\begin{block}{Problematica}
+
+Usted ha sido elegido como asesor de un Gerente de agencia del Banco
+Limabank. Se requiere la formulacion de una estrategia de planeamiento
+para el horizonte de tiempo comprendido entre los meses de abril a junio
+de 2019. Para cumplir con esta tarea se ha recopilado informacion de la
+agencia desde Enero 2014 hasta Marzo 2019.
+
+\end{block}
+
+\begin{block}{Dataset}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Arribos Totales} = Clientes que llegan a la agencia.\\
+\item
+  \textbf{T. Espera Total} = Tiempo promedio que espera el cliente en
+  cola (minutos).\\
+\item
+  \textbf{T. Atención Total} = Tiempo promedio que demora un cliente con
+  un asesor (minutos).\\
+\item
+  \textbf{Staff Teórico TM} = Cantidad de asesores en el turno mañana.\\
+\item
+  \textbf{Staff Teórico TT} = Cantidad de asesores en el turno tarde.\\
+\item
+  \textbf{Ventas tipo 1} = Cantidad de ventas del producto 1.\\
+\item
+  \textbf{Ventas tipo 2} = Cantidad de ventas del producto 2.\\
+\item
+  \textbf{Ventas tipo 3} = Cantidad de ventas del producto 3.\\
+\item
+  \textbf{Ventas tipo 4} = Cantidad de ventas del producto 4.
+\end{itemize}
+
+\end{block}
+
+\begin{block}{Analisis exploratorio de los datos (EDA)}
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Data summary}\tabularnewline
+\toprule
+\endhead
+Name & data\_agencia\tabularnewline
+Number of rows & 63\tabularnewline
+Number of columns & 9\tabularnewline
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ &\tabularnewline
+Column type frequency: &\tabularnewline
+numeric & 9\tabularnewline
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ &\tabularnewline
+Group variables & None\tabularnewline
+\bottomrule
+\end{longtable}
+
+\textbf{Variable type: numeric}
+
+\begin{longtable}[]{@{}lrrrrrrrrrl@{}}
+\toprule
+skim\_variable & n\_missing & complete\_rate & mean & sd & p0 & p25 &
+p50 & p75 & p100 & hist\tabularnewline
+\midrule
+\endhead
+ArribosTotales & 2 & 0.97 & 5020.33 & 665.09 & 3176.0 & 4623.0 & 5082.0
+& 5485.00 & 6217.0 & ▁▃▇▇▅\tabularnewline
+StaffTurnoMañana & 0 & 1.00 & 7.51 & 0.67 & 6.0 & 7.0 & 8.0 & 8.00 & 9.0
+& ▁▇▁▇▁\tabularnewline
+StaffTurnoTarde & 0 & 1.00 & 8.63 & 1.57 & 6.0 & 7.0 & 9.0 & 10.00 &
+10.0 & ▂▃▁▂▇\tabularnewline
+TiempoAtencion & 0 & 1.00 & 13.73 & 2.40 & 10.8 & 12.1 & 12.8 & 14.45 &
+20.0 & ▇▅▁▂▁\tabularnewline
+TiempoEspera & 0 & 1.00 & 10.18 & 2.39 & 5.7 & 8.3 & 10.0 & 11.85 & 15.8
+& ▃▇▇▃▂\tabularnewline
+Ventas\_1 & 0 & 1.00 & 27.97 & 10.14 & 10.0 & 20.0 & 26.0 & 34.50 & 57.0
+& ▆▇▆▃▁\tabularnewline
+Ventas\_2 & 1 & 0.98 & 82.66 & 49.09 & 27.0 & 47.0 & 63.0 & 132.50 &
+186.0 & ▇▃▁▂▂\tabularnewline
+Ventas\_3 & 2 & 0.97 & 94.85 & 62.04 & 26.0 & 42.0 & 84.0 & 128.00 &
+355.0 & ▇▅▂▁▁\tabularnewline
+Ventas\_4 & 0 & 1.00 & 156.79 & 51.68 & 78.0 & 119.0 & 151.0 & 187.00 &
+305.0 & ▇▇▇▁▂\tabularnewline
+\#\#\# Datos Faltantes & & & & & & & & & &\tabularnewline
+\bottomrule
+\end{longtable}
+
+Para completar los datos faltantes, se escogio el metodo de
+interpolacion. Esto debido a que los datos faltantes son variables
+exogenas a la empresa.
+
+A continuacion se pueden ver los datos recopilados por la empresa
+
+\begin{itemize}
+\item
+  Staff por turno tarde y mañana\\
+  \includegraphics{Forecast_files/figure-beamer/unnamed-chunk-3-1.pdf}
+\item
+  Ventas\\
+  \includegraphics{Forecast_files/figure-beamer/unnamed-chunk-4-1.pdf}
+\item
+  Tiempo espera y atencion
+\end{itemize}
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-5-1.pdf}
+
+\begin{itemize}
+\tightlist
+\item
+  Arribos totales\\
+  \includegraphics{Forecast_files/figure-beamer/unnamed-chunk-6-1.pdf}
+\end{itemize}
+
+\end{block}
+
+\begin{block}{Pronostico Arribos totales}
+
+Para realizar un planeamiento correcto es necesario conocer cuantos van
+a ser los arribos en los siguientes meses, para esto se propone el uso
+de dos modelos de series de tiempo (Exponential Triple Smoothing y
+Autorregresive Integrated Moving Average) y comparar sus resultados
+
+\textbf{ARIMA}
+
+El ajuste del modelo, nos indica que los datos se ajustan a un modelo
+ARIMA(0,1,1)
+
+\begin{verbatim}
+## Series: xts_agencia$ArribosTotales
+## ARIMA(0,1,1)
+##
+## Coefficients:
+##           ma1
+##       -0.3816
+## s.e.   0.1210
+##
+## sigma^2 estimated as 188860:  log likelihood=-464.16
+## AIC=932.32   AICc=932.52   BIC=936.57
+##
+## Training set error measures:
+##                     ME     RMSE      MAE        MPE     MAPE      MASE
+## Training set -16.01653 427.6265 320.1177 -0.9072502 6.681005 0.8655225
+##                    ACF1
+## Training set 0.02774422
+\end{verbatim}
+
+Los errores del modelo cumplen la condicion de normalidad. Tienen un
+comportamiento de WN (White Noise). El modelo es valido
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-8-1.pdf}
+
+\begin{verbatim}
+##
+##  Ljung-Box test
+##
+## data:  Residuals from ARIMA(0,1,1)
+## Q* = 5.8279, df = 9, p-value = 0.757
+##
+## Model df: 1.   Total lags used: 10
+\end{verbatim}
+
+En el grafico a continuacion se observa el pronostico con intervalos de
+confianza de 80\% y 95\%
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-9-1.pdf}
+
+\textbf{ETS}
+
+El ajuste del modelo, nos indica que los datos se ajustan a un modelo
+solo con nivel.
+
+\begin{verbatim}
+## ETS(A,N,N)
+##
+## Call:
+##  ets(y = xts_agencia$ArribosTotales)
+##
+##   Smoothing parameters:
+##     alpha = 0.6116
+##
+##   Initial states:
+##     l = 5002.7653
+##
+##   sigma:  434.5695
+##
+##      AIC     AICc      BIC
+## 1030.354 1030.761 1036.783
+##
+## Training set error measures:
+##                    ME     RMSE      MAE        MPE     MAPE      MASE
+## Training set -12.4259 427.6159 321.8933 -0.8399322 6.713345 0.8703233
+##                    ACF1
+## Training set 0.02593694
+\end{verbatim}
+
+Los errores del modelo cumplen la condicion de normalidad. Tienen un
+comportamiento de WN (White Noise). El modelo es valido
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-11-1.pdf}
+
+\begin{verbatim}
+##
+##  Ljung-Box test
+##
+## data:  Residuals from ETS(A,N,N)
+## Q* = 5.3939, df = 8, p-value = 0.7148
+##
+## Model df: 2.   Total lags used: 10
+\end{verbatim}
+
+En el grafico a continuacion se observa el pronostico con intervalos de
+confianza de 80\% y 95\%
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-12-1.pdf}
+
+Los valores pronosticados por el ajuste de los modelos ARIMA y ETS son
+similares, por lo cual es indistinto escoger entre cualquiera de estos
+modelos. Para el caso de estudio, elegimos el modelo de ARIMA.
+
+\end{block}
+
+\begin{block}{Modelamiento}
+
+Se tiene como objetivo determinar que variables tienen una mayor
+influencia en el tiempo de espera actual. Para conocer la relacion entre
+datos se hace uso del grafico de correlaciones (correlograma).
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-13-1.pdf}
+
+En el correlograma, se puede observar que las variables con mayor
+influencia en nuestra variable de impacto, son la cantidad de personas
+en el staff del turno tarde y los arribos Totales. Para comprobar esto,
+hacemos uso de una anova. Agregamos datos de la serie de tiempo a
+nuestro analisis como (mes,año,mitad,trimestre).
+
+\begin{verbatim}
+## Analysis of Variance Table
+##
+## Response: TiempoEspera
+##                  Df  Sum Sq Mean Sq F value    Pr(>F)
+## ArribosTotales    1  51.413  51.413 12.7987 0.0009891 ***
+## StaffTurnoMañana  1  13.257  13.257  3.3002 0.0773806 .
+## StaffTurnoTarde   1  31.987  31.987  7.9627 0.0076369 **
+## TiempoAtencion    1  21.466  21.466  5.3437 0.0264684 *
+## Ventas_1          1   7.683   7.683  1.9127 0.1749585
+## Ventas_2          1   0.109   0.109  0.0272 0.8700158
+## Ventas_3          1   2.056   2.056  0.5119 0.4788045
+## Ventas_4          1   0.324   0.324  0.0806 0.7781299
+## index.num         1   4.433   4.433  1.1036 0.3002893
+## diff              1  13.822  13.822  3.4409 0.0715817 .
+## year              1   7.522   7.522  1.8725 0.1794466
+## year.iso          1   2.203   2.203  0.5483 0.4636713
+## half              1  17.897  17.897  4.4552 0.0416139 *
+## quarter           1   0.210   0.210  0.0522 0.8205186
+## month             1   3.709   3.709  0.9234 0.3428108
+## wday              1   3.614   3.614  0.8997 0.3490082
+## qday              1   0.022   0.022  0.0055 0.9413965
+## yday              1   1.115   1.115  0.2776 0.6013960
+## mweek             1   0.170   0.170  0.0423 0.8381062
+## week              1   9.216   9.216  2.2942 0.1383579
+## week.iso          1   6.513   6.513  1.6214 0.2108454
+## week2             1   1.925   1.925  0.4792 0.4931137
+## week3             1   1.026   1.026  0.2554 0.6162714
+## week4             1   0.015   0.015  0.0038 0.9511583
+## Residuals        37 148.630   4.017
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+De acuerdo al analisis de varianza realizada, las variables con mayor
+significacion en el modelo son StaffTurnoTarde, TotalArribos, half
+(1:primera mitad del año, 2:segunda mitad del año) y TiempoAtencion.
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-15-1.pdf}
+
+\textbf{ARIMA}
+
+Ajustamos el modelo de regresion dinamica, modelando los errores con un
+modelo de arima.
+
+\begin{verbatim}
+## Series: data_arima$TiempoEspera
+## Regression with ARIMA(0,0,0) errors
+##
+## Coefficients:
+##       ArribosTotales  StaffTurnoTarde    half
+##                9e-04           0.4904  1.0325
+## s.e.           3e-04           0.1520  0.4603
+##
+## sigma^2 estimated as 4.128:  log likelihood=-132.52
+## AIC=273.03   AICc=273.72   BIC=281.61
+##
+## Training set error measures:
+##                       ME     RMSE      MAE       MPE     MAPE      MASE
+## Training set -0.01960623 1.982773 1.633191 -4.157514 16.62299 0.8333976
+##                   ACF1
+## Training set 0.2276741
+\end{verbatim}
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-17-1.pdf}
+
+\begin{verbatim}
+##
+##  Ljung-Box test
+##
+## data:  Residuals from Regression with ARIMA(0,0,0) errors
+## Q* = 7.8426, df = 7, p-value = 0.3467
+##
+## Model df: 3.   Total lags used: 10
+\end{verbatim}
+
+Dado que el modelo resultante es un ARIMA(0,0,0), se opta por usar un
+modelo lineal.
+
+\textbf{MARS}\\
+Debido a que el modelo de ARIMA solo explica un error normal (White
+noise) se opta por usar un modelo Multivariado adaptativo de regresion
+por splines, con el objetivo de conocer el impacto de las variables en
+el modelo.
+
+Se divide el modelo en 80\% y 20\% y se entrena el modelo utilizando
+cross validation, 10 folds
+
+\begin{verbatim}
+## Call: earth(formula=TiempoEspera~ArribosTotales+StaffTurnoTarde+half,
+##             data=data, keepxy=TRUE, nfold=10, ncross=30, varmod.method="lm")
+##
+##                        coefficients
+## (Intercept)               5.9502256
+## half                      1.3863387
+## h(ArribosTotales-4837)    0.0200871
+## h(ArribosTotales-5077)   -0.0838682
+## h(ArribosTotales-5130)    0.0646695
+## h(StaffTurnoTarde-7)      0.5607839
+##
+## Selected 6 of 13 terms, and 3 of 3 predictors
+## Termination condition: Reached nk 21
+## Importance: ArribosTotales, StaffTurnoTarde, half
+## Number of terms at each degree of interaction: 1 5 (additive model)
+## GCV 4.549264  RSS 195.2573  GRSq 0.2184975  RSq 0.4502646  CVRSq -0.480758
+##
+## Note: the cross-validation sd's below are standard deviations across folds
+##
+## Cross validation:   nterms 3.66 sd 1.42    nvars 2.07 sd 0.89
+##
+##      CVRSq   sd     MaxErr sd
+##     -0.481 1.37       8.05  4
+##
+## varmod: method "lm"    min.sd 0.217    iter.rsq 0.006
+##
+## stddev of predictions:
+##              coefficients iter.stderr iter.stderr%
+## (Intercept)    1.49157887     1.08045           72
+## TiempoEspera   0.06681073    0.106399          159
+##
+##                               mean   smallest   largest      ratio
+## 95% prediction interval   8.514036   7.768278   9.38792   1.208494
+##
+##                                          68%    80%    90%    95%
+## response values in prediction interval   76     92     95     98
+\end{verbatim}
+
+No se detecta presencia de herestocedasticidad en nuestro modelo.
+Algunos outlier en cuanto a los errores residuales. El modelo es valido
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-19-1.pdf}
+
+Observamos que el numero de bases optimas para la estimacion de nuestro
+modelo es 6, en funcion del GRSq
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-20-1.pdf}
+
+Observamos que las variables mas importantes para la estimacion de
+nuestro modelos en orden de mayor a menor importante son los arribos
+totales, la cantidad de personas en el staff turno tarde y si nos
+encontramos en la primera o segunda mitad del año.
+
+\begin{verbatim}
+##                 nsubsets   gcv    rss
+## ArribosTotales         5 100.0  100.0
+## StaffTurnoTarde        3  45.5   62.1
+## half                   2  38.3   50.3
+\end{verbatim}
+
+En el siguiente grafico, observamos el impacto que tiene la variacion de
+las variables en nuestra variable respuesta Tiempo Espera. En la primera
+mitad del año, el tiempo de espera es menor que en la segunda mitad del
+año. Asimismo, un aumento en la cantidad de personas en el staff del
+turno tarde, se ve reflejado en un aumento en el tiempo espera. Por
+ultimo, se observa un impacto mas pronunciado en la variable respuesta,
+en el rango de 4837 y 5077. Apartir de 5130 se equilibra el impacto de
+esta variable.
+
+\begin{verbatim}
+##  plotmo grid:    ArribosTotales StaffTurnoTarde half
+##                        5103.066               9    1
+\end{verbatim}
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-22-1.pdf}
+
+Por ultimo, para pronosticar los tiempos de espera para Abril, Mayo,
+Junio , se corrieron 1000 simulaciones, utilizando los valores generados
+por nuestro ajuste por ARIMA, numero de personas staff tarde igual a 6
+(mismo que los meses anteriores) y half igual a 1, ya que nos
+encontramos en la primera mitad de año
+
+\includegraphics{Forecast_files/figure-beamer/unnamed-chunk-23-1.pdf}
+
+A traves de los histogramas generados para cada mes, observamos que se
+cumple con el objetivo de la gerencia de mantener en 10min el tiempo
+limite de espera. La probabilidad de superar ese tiempo de espera para
+Abril, Mayo y Junio es de 0.049,0.071,0.063
+
+\end{block}
+
+\end{block}
+
