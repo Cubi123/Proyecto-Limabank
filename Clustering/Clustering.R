@@ -71,6 +71,7 @@ data_clean$OTROS_DEUTOTAL[index_na] <- mean(data_clean$OTROS_DEUTOTAL[!index_na]
 index_na <- is.na(data_clean$CANTIDAD_PRODUCTOS)
 data_clean$CANTIDAD_PRODUCTOS[index_na] <- mean(data_clean$CANTIDAD_PRODUCTOS[!index_na])
 
+data_clean <- na.omit(data_clean)
 
 data_clean$EDU <- as.numeric(factor(data_clean$EDU))
 data_clean$DIGITAL <-as.numeric(factor(data_clean$DIGITAL))
@@ -81,8 +82,11 @@ data_clean$SEMENTO_RIESGO <- encode_categorical(data_clean$SEMENTO_RIESGO,orden_
 cod_peru_ven <- data_clean$CODPAISNACIONALIDAD=="PER" | data_clean$CODPAISNACIONALIDAD=="VEN"
 data_clean$CODPAISNACIONALIDAD[!cod_peru_ven] <- "OTRO"
 
+data_clean <- unique(data_clean)
+
 data_clean_dummy <- crear_dummies(data_clean, nominal_variables)  
 
+write.csv(data_clean_dummy,"data_clean.csv",row.names = FALSE)
 
 #data_clean_ordered <- data_clean[,c(continuos_variables,binary_variables,ordinal_variables,nominal_variables)]
 #data_clean_ordered[,10:18] <- data_clean_ordered[,10:18] + 1
@@ -93,8 +97,7 @@ data_clean_dummy <- crear_dummies(data_clean, nominal_variables)
 ##                     store.params=FALSE,scale=TRUE,startCL="kmeans",
 ##                     autoStop=TRUE,ma.band=30, stop.tol=0.0001)
 
-res2 <- clustMD(data_clean_ordered,G = 5, CnsInd=9,OrdIndx=23,
-                Nnorms=20000, MaxIter=500, model="EVI")
+
+modelclust <- kmeans(data_clean_dummy,centers = 4)
 
 
-is.na(data_clean_ordered)

@@ -1,4 +1,3 @@
-set.seed(111)
 library(tidyverse)
 library(lubridate)
 library(xts)

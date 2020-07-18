@@ -1,0 +1,197 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(xts)
+library(forecast)
+library(corrplot)
+library(timetk)
+library(tidyquant)
+library(xgboost) 
+library(caret) 
+library(skimr)
+library(tidymodels)
+library(pander)
+
+
+setwd("C:/Users/Christian/Desktop/Ciclo Cubi/Temas IOP/Proyecto-Limabank/Data")
+
+clientes_limabank <- read_csv("Clientes_Limabank.csv")
+
+datos_agencia <- read_csv("Datos_Agencia.csv")%>%
+  select(-GRUPO)
+
+dates_agencia <- seq.Date(from=dmy("01-01-2014"),
+                          to=dmy("01-03-2019"),by="month")
+
+datos_agencia$INDICADOR <- c("ArribosTotales","TiempoEspera","TiempoAtencion",
+                             "StaffTurnoMañana","StaffTurnoTarde","Ventas_1",
+                             "Ventas_2","Ventas_3","Ventas_4")
+
+
+xts_agencia<-datos_agencia%>%
+  gather(key = "Date", value = value, 2:ncol(datos_agencia)) %>% 
+  spread_(key = names(datos_agencia)[1],value = 'value')%>%
+  select(-Date)%>%
+  xts(.,order.by = dates_agencia)
+```
+
+# Proyecto-Limabank
+Proyecto del curso Temas de Investigación de Operaciones 2020-1
+
+## Caso: Agencias
+
+### Problematica
+
+Usted ha sido elegido como asesor de un Gerente de agencia del Banco Limabank. Se requiere la formulacion de una estrategia de planeamiento para el horizonte de tiempo comprendido entre los meses de abril a junio de 2019. Para cumplir con esta tarea se ha recopilado informacion de la agencia desde Enero 2014 hasta Marzo 2019.
+
+### Dataset
+
+- **Arribos Totales** = Clientes que llegan a la agencia.  
+- **T. Espera Total** = Tiempo promedio que espera el cliente en cola (minutos).  
+- **T. Atención Total** = Tiempo promedio que demora un cliente con un asesor (minutos).  
+- **Staff Teórico TM** = Cantidad de asesores en el turno mañana.  
+- **Staff Teórico TT** = Cantidad de asesores en el turno tarde.  
+- **Ventas tipo 1** = Cantidad de ventas del producto 1.  
+- **Ventas tipo 2** = Cantidad de ventas del producto 2.  
+- **Ventas tipo 3** = Cantidad de ventas del producto 3.  
+- **Ventas tipo 4** = Cantidad de ventas del producto 4.  
+
+### Analisis exploratorio de los datos (EDA)
+
+```{r, echo=FALSE}
+data_agencia <- coredata(xts_agencia)
+skim(data_agencia)
+```
+### Datos Faltantes
+
+Para completar los datos faltantes, se escogio el metodo de interpolacion. Esto debido a que los datos faltantes son variables exogenas a la empresa. 
+
+```{r , echo=FALSE}
+xts_agencia$Ventas_2 <- na.approx(xts_agencia$Ventas_2)
+xts_agencia$Ventas_3 <- na.approx(xts_agencia$Ventas_3)
+xts_agencia$ArribosTotales <- na.approx(xts_agencia$ArribosTotales)
+```
+
+A continuacion se pueden ver los datos recopilados por la empresa
+
+- Staff por turno tarde y mañana  
+```{r , echo=FALSE}
+autoplot(xts_agencia[,c("StaffTurnoMañana","StaffTurnoTarde")])
+```
+
+- Ventas  
+```{r , echo=FALSE}  
+autoplot(xts_agencia[,c("Ventas_1","Ventas_2","Ventas_3","Ventas_4")])
+```
+
+- Tiempo espera y atencion
+
+```{r , echo=FALSE}  
+autoplot(xts_agencia[,c("TiempoEspera","TiempoAtencion")])
+```
+
+- Arribos totales  
+```{r , echo=FALSE}
+autoplot(xts_agencia[,c("ArribosTotales")])
+```
+
+### Pronostico Arribos totales
+
+Para realizar un planeamiento correcto es necesario conocer cuantos van a ser los arribos en los siguientes meses, para esto se propone el uso de dos modelos de series de tiempo (Exponential Triple Smoothing y Autorregresive Integrated Moving Average) y comparar sus resultados 
+
+**ARIMA**
+
+El ajuste del modelo, nos indica que los datos se ajustan a un modelo ARIMA(0,1,1)  
+
+```{r, echo=FALSE}
+fit_arima <- auto.arima(xts_agencia$ArribosTotales)
+summary(fit_arima)
+```
+
+Los errores del modelo cumplen la condicion de normalidad. Tienen un comportamiento de WN (White Noise). El modelo es valido
+
+```{r, echo=FALSE}
+checkresiduals(fit_arima)
+```
+
+En el grafico a continuacion se observa el pronostico con intervalos de confianza de 80% y 95%   
+
+```{r, echo=FALSE}
+autoplot(forecast(fit_arima,h=3),ylab="")
+```
+
+**ETS**
+
+El ajuste del modelo, nos indica que los datos se ajustan a un modelo solo con nivel.
+
+```{r, echo=FALSE}
+fit_ets <- ets(xts_agencia$ArribosTotales)
+summary(fit_ets)
+```
+
+Los errores del modelo cumplen la condicion de normalidad. Tienen un comportamiento de WN (White Noise). El modelo es valido
+
+```{r, echo=FALSE}
+checkresiduals(fit_ets)
+```
+
+En el grafico a continuacion se observa el pronostico con intervalos de confianza de 80% y 95%  
+
+```{r, echo=FALSE}
+autoplot(forecast(fit_ets,h=3),ylab="")
+```
+
+### Modelamiento
+Se tiene como objetivo determinar que variables tienen una mayor influencia en el tiempo de espera actual. Para conocer la relacion entre datos se hace uso del grafico de correlaciones (correlograma).
+
+```{r, echo=FALSE}
+cor.mtest <- function(mat, ...) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat<- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], ...)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+p.mat <- cor.mtest(xts_agencia)
+corr_ts <-cor(xts_agencia)
+
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(corr_ts,type="upper", tl.srt=45,tl.col="black",
+         diag=FALSE,addCoef.col = "black",
+         p.mat = p.mat, sig.level = 0.01, insig = "blank",
+         method="color", col=col(200))
+```
+
+En el correlograma, se puede observar que las variables con mayor influencia en nuestra variable de impacto, son la cantidad de personas en el staff del turno tarde y los arribos Totales. Para comprobar esto, hacemos uso de una anova. Agregamos datos de la serie de tiempo a nuestro analisis como (mes,año,mitad,trimestre).
+
+```{r, echo=FALSE}
+agencia <- as.data.frame(coredata(xts_agencia))
+data <- tk_augment_timeseries_signature(xts_agencia)
+fit_lm_tiempo_espera <- stats::lm(TiempoEspera~.,data)
+anova(fit_lm_tiempo_espera)
+```
+
+Observamos que las variables con mayor significacion en el modelo son StaffTurnoTarde, TotalArribos, half (1:primera mitad del año, 2:segunda mitad del año) y TiempoAtencion. 
+
+
+```{r, echo=FALSE}
+agencia <- as.data.frame(coredata(xts_agencia))
+data <- tk_augment_timeseries_signature(xts_agencia)
+fit_lm_tiempo_espera <- stats::lm(TiempoEspera~.,data)
+anova(fit_lm_tiempo_espera)
+```
+
+
+
