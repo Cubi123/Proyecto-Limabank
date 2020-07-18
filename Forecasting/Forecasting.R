@@ -6,8 +6,14 @@ library(forecast)
 library(corrplot)
 library(timetk)
 library(tidyquant)
-library(xgboost)
-library(caret)
+library(xgboost) 
+library(caret) 
+library(skimr)
+library(tidymodels)
+library(pander)
+
+
+setwd("C:/Users/Christian/Desktop/Ciclo Cubi/Temas IOP/Proyecto-Limabank/Data")
 
 clientes_limabank <- read_csv("Clientes_Limabank.csv")
 
@@ -18,8 +24,9 @@ dates_agencia <- seq.Date(from=dmy("01-01-2014"),
                           to=dmy("01-03-2019"),by="month")
 
 datos_agencia$INDICADOR <- c("ArribosTotales","TiempoEspera","TiempoAtencion",
-                             "StaffTeleferico_TM","StaffTeleferico_TT","Ventas_1",
+                             "StaffTurnoMañana","StaffTurnoTarde","Ventas_1",
                              "Ventas_2","Ventas_3","Ventas_4")
+
 
 xts_agencia<-datos_agencia%>%
   gather(key = "Date", value = value, 2:ncol(datos_agencia)) %>% 
@@ -27,20 +34,20 @@ xts_agencia<-datos_agencia%>%
   select(-Date)%>%
   xts(.,order.by = dates_agencia)
 
-autoplot(xts_agencia[,c("StaffTeleferico_TM","StaffTeleferico_TT")])
-
-autoplot(xts_agencia[,c("Ventas_1","Ventas_2","Ventas_3","Ventas_4")])
+skim(coredata(xts_agencia))
 
 xts_agencia$Ventas_2 <- na.approx(xts_agencia$Ventas_2)
 xts_agencia$Ventas_3 <- na.approx(xts_agencia$Ventas_3)
+xts_agencia$ArribosTotales <- na.approx(xts_agencia$ArribosTotales)
+
+autoplot(xts_agencia[,c("StaffTurnoMañana","StaffTurnoTarde")])
+
+autoplot(xts_agencia[,c("Ventas_1","Ventas_2","Ventas_3","Ventas_4")])
 
 autoplot(xts_agencia[,c("TiempoEspera","TiempoAtencion")])
 
 autoplot(xts_agencia[,c("ArribosTotales")])
 
-xts_agencia$ArribosTotales <- na.approx(xts_agencia$ArribosTotales)
-
-acf(xts_agencia$ArribosTotales)
 
 fit_arima <- auto.arima(xts_agencia$ArribosTotales)
 summary(fit_arima)
@@ -52,11 +59,7 @@ summary(fit_ets)
 checkresiduals(fit_ets)
 autoplot(forecast(fit_ets,h=9),ylab="")
 
-forecast(fit_arima,h=9)
-arima.sim(model = list(order=c(0,1,1),ma=0.3816),3)
-
-fit_arima
-
+simulate(fit_arima,future = TRUE,seed = 3)
 
 cor.mtest <- function(mat, ...) {
   mat <- as.matrix(mat)
@@ -83,7 +86,6 @@ corrplot(corr_ts,type="upper", tl.srt=45,tl.col="black",
          method="color", col=col(200))
 
 
-
 TiempoEspera <- xts_agencia$TiempoEspera
 
 fit_tiempo_espera <- auto.arima(xts_agencia$TiempoEspera,
@@ -99,14 +101,47 @@ ggtsdisplay(residuals(fit_tiempo_espera),
 
 agencia <- as.data.frame(coredata(xts_agencia))
 
-fit_lm_tiempo_espera <- lm(TiempoEspera~.,agencia)
-anova(fit_lm_tiempo_espera)
-
-
 data <- tk_augment_timeseries_signature(xts_agencia)
 
-ymd(index(xts_agencia))
+fit_lm_tiempo_espera <- stats::lm(TiempoEspera~.,data)
+fit_lm_tiempo_espera
 
-class(xts_agencia)
+anova(fit_lm_tiempo_espera)
 
+fit_lm <- lm(TiempoEspera~ArribosTotales+StaffTurnoTarde+half,data)
 
+anova(fit_lm)
+library(earth)
+
+m1 <- earth(TiempoEspera~ArribosTotales+StaffTurnoTarde+half,data=data,
+      nfold=10, ncross=30,varmod.method="lm",keepxy=TRUE)
+
+summary(m1)
+plot(m1)
+plot(m1, which=1, col.rsq=0)
+evimp(m1, trim=FALSE)
+plotmo(m1)
+
+set.seed(111)
+
+nsimulations <- 1000
+abril <- rep(0,nsimulations)
+mayo <- rep(0,nsimulations)
+junio <- rep(0,nsimulations)
+for (i in 1:nsimulations){
+  test_data <- data.frame(ArribosTotales =c(simulate(fit_arima,future = TRUE,nsim = 3)),
+                          StaffTurnoTarde=6,
+                          half=1)
+  
+  tiemposEspera_predicted <- predict(m1,test_data)
+  abril[i] <- tiemposEspera_predicted[1]
+  mayo[i] <- tiemposEspera_predicted[2]
+  junio[i] <-tiemposEspera_predicted[3]
+}
+
+par(mfrow=c(1,3))
+hist(abril)
+hist(mayo)
+hist(junio)
+
+autoplot(data[,c("TiempoEspera","StaffTurnoTarde","StaffTurnoMañana")])
