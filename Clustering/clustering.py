@@ -149,20 +149,3 @@ with sns.axes_style("darkgrid"), sns.plotting_context("talk"):
     continous_interpret(data_to_interpret, variables_continuas, "cluster",3,6,25, 30, 0.5,0.3,)
     plt.show()
     plt.close()
-
-# %% codecell
-with sns.axes_style("darkgrid"), sns.plotting_context("talk"):
-    discrete_interpret(data, variables_discretas,"cluster",4,6,25,1 )
-    plt.show()
-    plt.close()
-
-# %% codecell
-with sns.axes_style("darkgrid"), sns.plotting_context("paper"):
-    discrete_interpret(data, variables_nominales,"cluster",4 ,2,15,1 )
-    plt.show()
-    plt.close()
-
-# %% codecell
-with sns.axes_style("darkgrid"), sns.plotting_context("paper"):
-    discrete_interpret(data, variables_ordinales,"cluster",4,2,15,1 )
-    plt.show()
