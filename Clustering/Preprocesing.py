@@ -5,6 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OrdinalEncoder
 
 data = pd.read_csv("Data/LimaBank_Data_Grupo1.csv")
 backup= data.copy(deep=True)
@@ -39,6 +40,8 @@ data.dropna(axis=0,inplace=True,subset=to_drop)
 #elimino EDAD_2
 data.drop("EDAD_2",axis=1,inplace=True)
 
+data.to_csv("Data/limabank_to_interpret.csv", index=False)
+
 #CANTIDAD_PRODUCTOS  normalizar
 data["CANTIDAD_PRODUCTOS"] = (data["CANTIDAD_PRODUCTOS"] -data["CANTIDAD_PRODUCTOS"].mean())/(np.std(data["CANTIDAD_PRODUCTOS"]) *2)
 
@@ -60,3 +63,8 @@ data["DESTIPPROVINCIA"] = np.select([data["DESTIPPROVINCIA"]=="Lima",
                                      data["DESTIPPROVINCIA"]=="Provincia"],
                                     [1,
                                      0])
+
+# TIPNIVELEDUCACIONAL
+order = ["ANA","NDI","PRI","TEI","SEC","TEC","FAR","SUP","BAC","LIC","TIT","MAE","DOC"]
+data["TIPNIVELEDUCACIONAL"] = pd.Categorical(data["TIPNIVELEDUCACIONAL"],categories=order,ordered=True)
+OrdinalEncoder(data["TIPNIVELEDUCACIONAL"])
