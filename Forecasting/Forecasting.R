@@ -85,18 +85,19 @@ corrplot(corr_ts,type="upper", tl.srt=45,tl.col="black",
          method="color", col=col(200))
 
 
+autoplot(xts_agencia[,c("TiempoEspera","TiempoAtencion","StaffTurnoTarde")])
+
+
+data <- tk_augment_timeseries_signature(xts_agencia)
+
 TiempoEspera <- xts_agencia$TiempoEspera
 
-fit_tiempo_espera <- auto.arima(xts_agencia$TiempoEspera,
-                                xreg=xts_agencia[,-5])
+data_arima <- cbind(xts_agencia,data$half)
+fit_tiempo_espera <- auto.arima(data_arima$TiempoEspera,
+                                xreg=data_arima[,c(1,3,10)])
 
 summary(fit_tiempo_espera)
-
-ggtsdisplay(arima.errors(fit_tiempo_espera),
-              main="ARIMA errors")
-
-ggtsdisplay(residuals(fit_tiempo_espera),
-            main="ARIMA residuals")
+checkresiduals(fit_tiempo_espera)
 
 agencia <- as.data.frame(coredata(xts_agencia))
 
@@ -110,12 +111,17 @@ anova(fit_lm_tiempo_espera)
 fit_lm <- lm(TiempoEspera~ArribosTotales+StaffTurnoTarde+half,data)
 
 anova(fit_lm)
+
 library(earth)
+library(caTools)
+library(pROC)
+
 
 m1 <- earth(TiempoEspera~ArribosTotales+StaffTurnoTarde+half,data=data,
       nfold=10, ncross=30,varmod.method="lm",keepxy=TRUE)
 
 summary(m1)
+
 plot(m1)
 plot(m1, which=1, col.rsq=0)
 evimp(m1, trim=FALSE)
@@ -139,8 +145,7 @@ for (i in 1:nsimulations){
 }
 
 par(mfrow=c(1,3))
+
 hist(abril)
 hist(mayo)
 hist(junio)
-
-autoplot(data[,c("TiempoEspera","StaffTurnoTarde","StaffTurnoMañana")])

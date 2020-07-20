@@ -71,7 +71,13 @@ data_clean$OTROS_DEUTOTAL[index_na] <- mean(data_clean$OTROS_DEUTOTAL[!index_na]
 index_na <- is.na(data_clean$CANTIDAD_PRODUCTOS)
 data_clean$CANTIDAD_PRODUCTOS[index_na] <- mean(data_clean$CANTIDAD_PRODUCTOS[!index_na])
 
+cod_peru_ven <- data_clean$CODPAISNACIONALIDAD=="PER" | data_clean$CODPAISNACIONALIDAD=="VEN"
+data_clean$CODPAISNACIONALIDAD[!cod_peru_ven] <- "OTRO"
+
 data_clean <- na.omit(data_clean)
+data_clean <- unique(data_clean)
+write.csv(data_clean,"data_clean_noimput.csv",row.names=FALSE)
+nrow(data_clean)
 
 data_clean$EDU <- as.numeric(factor(data_clean$EDU))
 data_clean$DIGITAL <-as.numeric(factor(data_clean$DIGITAL))
@@ -82,6 +88,7 @@ data_clean$SEMENTO_RIESGO <- encode_categorical(data_clean$SEMENTO_RIESGO,orden_
 cod_peru_ven <- data_clean$CODPAISNACIONALIDAD=="PER" | data_clean$CODPAISNACIONALIDAD=="VEN"
 data_clean$CODPAISNACIONALIDAD[!cod_peru_ven] <- "OTRO"
 
+is.unique(data_clean)
 data_clean <- unique(data_clean)
 
 data_clean_dummy <- crear_dummies(data_clean, nominal_variables)  
