@@ -149,3 +149,20 @@ par(mfrow=c(1,3))
 hist(abril)
 hist(mayo)
 hist(junio)
+
+nsimulations <-200
+tiempo <- rep(0,nsimulations)
+par(mfrow=c(2,3))
+for (staff in 5:10){
+for (i in 1:nsimulations){
+  test_data <- data.frame(ArribosTotales =c(simulate(fit_arima,future = TRUE,nsim = 3)),
+                          StaffTurnoTarde=6,
+                          half=1)
+  
+  tiemposEspera_predicted <- predict(m1,test_data)
+  tiempo[i] <- mean(tiemposEspera_predicted)
+}
+  hist(tiempo,main = paste("Staff:", staff))
+}
+
+

@@ -1,6 +1,7 @@
 library(tidyverse)
 library(clustMD)
 library(skimr)
+library(kamila)
 
 encode_categorical <- function(x, order = unique(x)) {
   x <- as.numeric(factor(x, levels = order, exclude = NULL))
@@ -76,35 +77,42 @@ data_clean$CODPAISNACIONALIDAD[!cod_peru_ven] <- "OTRO"
 
 data_clean <- na.omit(data_clean)
 data_clean <- unique(data_clean)
-write.csv(data_clean,"data_clean_noimput.csv",row.names=FALSE)
 nrow(data_clean)
 
-data_clean$EDU <- as.numeric(factor(data_clean$EDU))
-data_clean$DIGITAL <-as.numeric(factor(data_clean$DIGITAL))
-data_clean$TIPNIVELEDUCACIONAL <- encode_categorical(data_clean$TIPNIVELEDUCACIONAL,orden_nivel_educacion)
-data_clean$PERFIL_VINCULACION <- encode_categorical(data_clean$PERFIL_VINCULACION,orden_vinculacion)
-data_clean$SEMENTO_RIESGO <- encode_categorical(data_clean$SEMENTO_RIESGO,orden_riesgo)
+data_clean$EDU <- factor(data_clean$EDU)
+data_clean$DIGITAL <-factor(data_clean$DIGITAL)
+data_clean$TIPNIVELEDUCACIONAL <- factor(data_clean$TIPNIVELEDUCACIONAL,levels=orden_nivel_educacion)
+data_clean$PERFIL_VINCULACION <- factor(data_clean$PERFIL_VINCULACION,levels=orden_vinculacion)
+data_clean$SEMENTO_RIESGO <-factor(data_clean$SEMENTO_RIESGO,levels=orden_riesgo)
 
 cod_peru_ven <- data_clean$CODPAISNACIONALIDAD=="PER" | data_clean$CODPAISNACIONALIDAD=="VEN"
 data_clean$CODPAISNACIONALIDAD[!cod_peru_ven] <- "OTRO"
 
-is.unique(data_clean)
-data_clean <- unique(data_clean)
+data_clean$CODPAISNACIONALIDAD <- factor(data_clean$CODPAISNACIONALIDAD)
+data_clean$DESTIPPROVINCIA <- factor(data_clean$DESTIPPROVINCIA)
+data_clean$TIPESTCIVIL<- factor(data_clean$TIPESTCIVIL)
+data_clean$DIGITALIDAD<- factor(data_clean$DIGITALIDAD)
 
-data_clean_dummy <- crear_dummies(data_clean, nominal_variables)  
+#data_clean <- unique(data_clean)
 
-write.csv(data_clean_dummy,"data_clean.csv",row.names = FALSE)
+#data_clean_dummy <- crear_dummies(data_clean, nominal_variables)  
+
 
 #data_clean_ordered <- data_clean[,c(continuos_variables,binary_variables,ordinal_variables,nominal_variables)]
 #data_clean_ordered[,10:18] <- data_clean_ordered[,10:18] + 1
 #data_clean_ordered[, 1:9] <- scale(data_clean_ordered[, 1:9])
 
-##res<-clustMDparallel(data_clean_ordered,G = 5, CnsInd=9,OrdIndx=23,
-##                     Nnorms=20000, MaxIter=500, model=c("EVI"),
-##                     store.params=FALSE,scale=TRUE,startCL="kmeans",
-##                     autoStop=TRUE,ma.band=30, stop.tol=0.0001)
+#res<-clustMDparallel(data_clean_ordered,G = 5, CnsInd=9,OrdIndx=23,
+#                     Nnorms=20000, MaxIter=500, model=c("EVI"),
+#                     store.params=FALSE,scale=TRUE,startCL="kmeans",
+#                     autoStop=TRUE,ma.band=30, stop.tol=0.0001)
 
+#res <- clustMD(X = data_clean_ordered, G=5,CnsIndx = 9,OrdIndx = 23,
+#               model = "EVI")
 
-modelclust <- kmeans(data_clean_dummy,centers = 4)
+conDf <- data_clean[,c(continuos_variables)]
+catDf <- data.frame(data_clean[,c(ordinal_variables,nominal_variables)],stringsAsFactors = FALSE)
+conDf <- data.frame(scale(conDf),stringsAsFactors = FALSE)
+kamRes <- kamila(catFactor = catDf, numClust = 5,numInit = 10)
 
-
+table(kamRes$finalMemb,catDf$SEMENTO_RIESGO)

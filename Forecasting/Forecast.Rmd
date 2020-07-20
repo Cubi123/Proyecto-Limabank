@@ -1,5 +1,7 @@
 ---
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -281,3 +283,27 @@ hist(junio)
 ```
 
 A traves de los histogramas generados para cada mes, observamos que se cumple con el objetivo de la gerencia de mantener en 10min el tiempo limite de espera. La probabilidad de superar ese tiempo de espera para Abril, Mayo y Junio es de 0.049,0.071,0.063
+
+Luego de hacer el analisis de sensibilidad variando el numero de staff de turno tarde entre 5 y 13 obtenemos los siguientes resultados
+
+```{r echo=FALSE}
+nsimulations <-500
+tiempo <- rep(0,nsimulations)
+par(mfrow=c(3,3))
+for (staff in 5:13){
+for (i in 1:nsimulations){
+  test_data <- data.frame(ArribosTotales =c(simulate(fit_arima,future = TRUE,nsim = 3)),
+                          StaffTurnoTarde=6,
+                          half=1)
+  
+  tiemposEspera_predicted <- predict(m1,test_data)
+  tiempo[i] <- mean(tiemposEspera_predicted)
+}
+  prob = mean(tiempo>=10)
+  hist(tiempo,main = paste("Staff:", staff), ylab="", xlab= paste("P(t>10):",prob))
+}
+```
+
+Observamos que la mejor opcion es mantener o reducir el staff a 5  
+  
+   
